@@ -1,0 +1,45 @@
+#!/bin/bash
+
+#Packages Needed
+#curl
+#sed
+#html2text
+#notify-send
+#awk
+#paplay
+#rofi
+#..............
+
+meet(){
+	link=LINK
+	path=PATH
+	demo=DEMO_FILE
+	temp=TEMP_FILE
+	table_data=TABLE_FILE
+	google_meet=ICON 
+	notification=Notification.mp3  
+
+	curl $link | sed -n '/<tbody>/,/<\/tbody>/p' > $path/$demo
+	if [ -s $path/$demo ]; then
+		# The file is not-empty.
+		cat $path/$demo |html2text --pad-tables --no-wrap-links > $path/$temp
+
+		if ! diff -q $path/$temp $path/$table_data >/dev/null; then
+			#echo "No changes"
+			cat $path/$temp > $path/$table_data
+			notify-send "Meeting @ $(head -n 1 $path/$table_data | awk -F'|' {'print $4'})" "$(head -n 1 $path/$table_data | awk -F'|' {'print $4'})" -i $path/$google_meet -u critical
+			paplay $path/$notification
+			# Additional actions you want to take if changes are detected
+		fi
+		echo "Class: $(wc -l $path/$table_data | awk {'print $1 - 1'})"
+	fi
+
+#click class
+#gnome-terminal -- cat $table_data
+case $BLOCK_BUTTON in
+	#	1) exec gnome-terminal -- cat $path/$table_data;;
+	1) cat $path/$table_data | rofi -dmenu -config /usr/share/rofi/themes/gruvbox-dark.rasi | grep -oP '\[.*\]\(\Khttps?://[^)]+' | sed 's/ "class room"//' | xargs xdg-open
+esac
+
+}
+meet
